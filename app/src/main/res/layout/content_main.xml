@@ -9,23 +9,26 @@
     tools:context=".MainActivity"
     tools:showIn="@layout/app_bar_main">
 
-
+    <!--CONTENTS-->
     <LinearLayout
         android:id="@+id/linearLayoutContent"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:gravity="center">
 
-
-        <ImageView
-            android:id="@+id/imageViewAlert"
+        <!--Add PDF-->
+        <ImageButton
+            android:id="@+id/buttonAddPDF"
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:layout_marginLeft="10dp"
-            app:srcCompat="@drawable/ic_add_pdf"
+            android:scaleType="centerInside"
+            android:background="@drawable/ic_add_pdf"
             tools:ignore="VectorDrawableCompat" />
+
     </LinearLayout>
 
+    <!--BUTTONS-->
     <LinearLayout
         android:id="@+id/linearLayoutButtons"
         android:layout_width="fill_parent"
