@@ -30,4 +30,8 @@ dependencies {
 
     implementation 'com.mikhaellopez:circularimageview:3.2.0'
     implementation 'com.xw.repo:bubbleseekbar:3.6-lite'
+    implementation 'com.nbsp:library:1.8'
+    implementation 'com.karumi:dexter:5.0.0'
+    implementation 'com.github.barteksc:android-pdf-viewer:3.0.0-beta.5'
+    implementation 'com.itextpdf:itextg:5.5.10'
 }

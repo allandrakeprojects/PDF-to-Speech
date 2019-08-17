@@ -11,16 +11,27 @@
 
     <!--CONTENTS-->
     <LinearLayout
-        android:id="@+id/linearLayoutContent"
+        android:id="@+id/relativeLayoutContent"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:gravity="center">
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:layout_marginBottom="100dp"
+        >
 
         <!--Add PDF-->
+        <com.github.barteksc.pdfviewer.PDFView
+            android:id="@+id/pdfView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            />
+
         <ImageButton
             android:id="@+id/buttonAddPDF"
             android:layout_width="120dp"
             android:layout_height="120dp"
+            android:layout_marginTop="40dp"
             android:layout_marginLeft="10dp"
             android:scaleType="centerInside"
             android:background="@drawable/ic_add_pdf"
@@ -34,7 +45,8 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:gravity="bottom|center_horizontal"
-        android:visibility="gone">
+        android:visibility="gone"
+        >
 
         <!--Previous-->
         <com.mikhaellopez.circularimageview.CircularImageView
