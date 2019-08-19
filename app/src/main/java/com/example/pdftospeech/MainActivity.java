@@ -1,10 +1,14 @@
 package com.example.pdftospeech;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -56,12 +60,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // TTS
     private TextToSpeech textToSpeech;
 
+    // MediaPlayer
+    private MediaPlayer mMediaPlayer;
+
+    // ProgressDialog
+    ProgressDialog progressDialog;
+
     // Variables
     private boolean IsPDFView;
+    private boolean IsPause;
+    private final String SOUND_PATH_TEMP = Environment.getExternalStorageDirectory().getPath() + "/pdf_tts_temp.mp3";
     private String FilePath;
     private String PageContent;
     private int PageCount;
     private int CurrentPage = 1;
+    private int CurrentWord = 0;
 
     /**
      * Create the app
@@ -84,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * Initialize Widgets
      */
-    private void INITIALIZE(){
+    private void INITIALIZE() {
         // Button
         buttonAddPDF = findViewById(R.id.buttonAddPDF);
 
@@ -109,8 +122,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // PDFView
         pdfView = findViewById(R.id.pdfView);
 
+        // ProgressDialog
+        progressDialog = new ProgressDialog(MainActivity.this);
+
         // TTS
         textToSpeech = new TextToSpeech(this, this);
+        textToSpeech.setOnUtteranceProgressListener(mProgressListener);
     }
 
     /**
@@ -119,113 +136,108 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         // Button Add PDF
-        if(view.getId() == R.id.buttonAddPDF){
+        if (view.getId() == R.id.buttonAddPDF) {
             new MaterialFilePicker()
-                .withActivity(this)
-                .withRequestCode(1000)
-                .withFilter(Pattern.compile(".*\\.pdf$")) // Filtering files and directories by file name using regexp
-                .withFilterDirectories(false) // Set directories filterable (false by default)
-                .withHiddenFiles(true) // Show hidden files and folders
-                .start();
+                    .withActivity(this)
+                    .withRequestCode(1000)
+                    .withFilter(Pattern.compile(".*\\.pdf$")) // Filtering files and directories by file name using regexp
+                    .withFilterDirectories(false) // Set directories filterable (false by default)
+                    .withHiddenFiles(true) // Show hidden files and folders
+                    .start();
         }
         // Button Play
-        else if(view.getId() == R.id.buttonPlay){
+        else if (view.getId() == R.id.buttonPlay) {
             ButtonPlay();
         }
         // Button Pause
-        else if(view.getId() == R.id.buttonPause){
+        else if (view.getId() == R.id.buttonPause) {
             ButtonPause();
         }
         // Button Stop
-        else if(view.getId() == R.id.buttonStop){
+        else if (view.getId() == R.id.buttonStop) {
             ButtonStop();
         }
         // Button Previous
-        else if(view.getId() == R.id.buttonPrevious){
+        else if (view.getId() == R.id.buttonPrevious) {
             ButtonPrevious();
         }
         // Button Next
-        else if(view.getId() == R.id.buttonNext){
-            ButtonNext();
+        else if (view.getId() == R.id.buttonNext) {
+            ButtonNext(false);
         }
     }
 
     /**
      * Button Play
      */
-    private void ButtonPlay(){
+    private void ButtonPlay() {
         buttonPlay.setVisibility(View.GONE);
         buttonPause.setVisibility(View.VISIBLE);
-        DetailsPDF();
-        Speak();
+
+        if(!IsPause){
+            DetailsPDF();
+
+            if (PageContent != null && PageContent.length() > 0) {
+                Speak();
+            } else {
+                Toast.makeText(this, "Make sure PDF have text on it.", Toast.LENGTH_SHORT).show();
+            }
+        } else{
+            mMediaPlayer.seekTo(CurrentWord);
+            mMediaPlayer.start();
+        }
     }
 
     /**
      * Button Pause
      */
-    private void ButtonPause(){
+    private void ButtonPause() {
         buttonPlay.setVisibility(View.VISIBLE);
         buttonPause.setVisibility(View.GONE);
 
+        mMediaPlayer.pause();
+        IsPause = true;
+        CurrentWord = mMediaPlayer.getCurrentPosition();
     }
 
     /**
      * Button Stop
      */
-    private void ButtonStop(){
+    private void ButtonStop() {
         buttonPlay.setVisibility(View.VISIBLE);
         buttonPause.setVisibility(View.GONE);
-        textToSpeech.stop();
+
+        mMediaPlayer.stop();
+
+        IsPause = false;
+        CurrentWord = 0;
     }
 
     /**
      * Button Previous
      */
-    private void ButtonPrevious(){
-        if(CurrentPage != 1){
+    private void ButtonPrevious() {
+        if (CurrentPage != 1) {
             CurrentPage--;
 
-            pdfView.jumpTo(CurrentPage-1);
+            pdfView.jumpTo(CurrentPage - 1);
         }
     }
 
     /**
      * Button Next
      */
-    private void ButtonNext(){
-        if(CurrentPage < PageCount){
+    private void ButtonNext(boolean IsAuto) {
+        if (CurrentPage < PageCount) {
             CurrentPage++;
 
-            pdfView.jumpTo(CurrentPage-1);
+            pdfView.jumpTo(CurrentPage - 1);
+
+            if (IsAuto) {
+                ButtonPlay();
+            }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Handle File Path of Selected PDF
@@ -239,17 +251,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             File file = new File(FilePath);
             PDFView pdfView = findViewById(R.id.pdfView);
             pdfView.fromFile(file)
-                .enableSwipe(false)
-                .swipeHorizontal(true)
-                .enableDoubletap(true)
-                .defaultPage(0)
-                .enableAnnotationRendering(false)
-                .password(null)
-                .scrollHandle(null)
-                .enableAntialiasing(true)
-                .spacing(0)
-                .pageFitPolicy(FitPolicy.WIDTH)
-                .load();
+                    .enableSwipe(false)
+                    .swipeHorizontal(true)
+                    .enableDoubletap(true)
+                    .defaultPage(0)
+                    .enableAnnotationRendering(false)
+                    .password(null)
+                    .scrollHandle(null)
+                    .enableAntialiasing(true)
+                    .spacing(0)
+                    .pageFitPolicy(FitPolicy.WIDTH)
+                    .load();
 
             String filename = file.getName();
             // Toast.makeText(this, filename, Toast.LENGTH_SHORT).show();
@@ -263,7 +275,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void DetailsPDF(){
+    /**
+     * Get Details of PDF
+     */
+    private void DetailsPDF() {
         try {
             String parsedText = "";
             PdfReader reader = new PdfReader(FilePath);
@@ -278,35 +293,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * Initialize Multiple Permission
      */
-    private void RequestMultiplePermission(){
+    private void RequestMultiplePermission() {
         Dexter.withActivity(this)
-            .withPermissions(
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_EXTERNAL_STORAGE)
-            .withListener(new MultiplePermissionsListener() {
-                @Override
-                public void onPermissionsChecked(MultiplePermissionsReport report) {
-                    if (report.areAllPermissionsGranted()) {
+                .withPermissions(
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE)
+                .withListener(new MultiplePermissionsListener() {
+                    @Override
+                    public void onPermissionsChecked(MultiplePermissionsReport report) {
+                        if (report.areAllPermissionsGranted()) {
+                        }
+
+                        if (report.isAnyPermissionPermanentlyDenied()) {
+                            Toast.makeText(MainActivity.this, "To able to access the file on your phone. Allow the permission.", Toast.LENGTH_SHORT).show();
+                        }
                     }
 
-                    if (report.isAnyPermissionPermanentlyDenied()) {
-                        Toast.makeText(MainActivity.this, "To able to access the file on your phone. Allow the permission.", Toast.LENGTH_SHORT).show();
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
+                        token.continuePermissionRequest();
                     }
-                }
-
-                @Override
-                public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
-                    token.continuePermissionRequest();
-                }
-            }).
-            withErrorListener(new PermissionRequestErrorListener() {
-                @Override
-                public void onError(DexterError error) {
-                    Toast.makeText(getApplicationContext(), "Some Error! ", Toast.LENGTH_SHORT).show();
-                }
-            })
-            .onSameThread()
-            .check();
+                }).
+                withErrorListener(new PermissionRequestErrorListener() {
+                    @Override
+                    public void onError(DexterError error) {
+                        Toast.makeText(getApplicationContext(), "Some Error! ", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .onSameThread()
+                .check();
     }
 
     /**
@@ -324,19 +339,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            // Start Settings
+            // GOTO Settings
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
             return true;
         } else if (id == R.id.action_refresh) {
-            if(IsPDFView){
+            // Refresh
+            if (IsPDFView) {
                 ButtonStop();
 
                 pdfView.setVisibility(View.GONE);
@@ -346,7 +358,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 pdfView.invalidate();
 
                 IsPDFView = false;
-            } else{
+                CurrentPage = 1;
+            } else {
                 Toast.makeText(this, "You must select PDF first.", Toast.LENGTH_SHORT).show();
             }
         }
@@ -363,40 +376,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int result = textToSpeech.setLanguage(Locale.US);
             if (result == TextToSpeech.LANG_MISSING_DATA
                     || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Toast.makeText(getApplicationContext(), "Language is not supported on this device.", Toast.LENGTH_SHORT).show();
-            } else {
-                Speak();
+                // Toast.makeText(getApplicationContext(), "Language is not supported on this device.", Toast.LENGTH_SHORT).show();
             }
-
-            textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                @Override
-                public void onDone(String utteranceId) {
-                    Toast.makeText(MainActivity.this, "asdsadasdsa done", Toast.LENGTH_SHORT).show();
-                    buttonPlay.setVisibility(View.VISIBLE);
-                    buttonPause.setVisibility(View.GONE);
-                }
-
-                @Override
-                public void onError(String utteranceId) {
-                }
-
-                @Override
-                public void onStart(String utteranceId) {
-                }
-            });
         } else {
-            Toast.makeText(getApplicationContext(), "Language is not supported on this device.", Toast.LENGTH_SHORT).show();
+            // Toast.makeText(getApplicationContext(), "Language is not supported on this device.", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    /**
-     * Callback Detect Speak When Finished
-     */
-//    public void onUtteranceCompleted(String utteranceId) {
-//        SetButtonEnable();
-//    }
-
-    public void SetButtonEnable(){
     }
 
     /**
@@ -410,13 +394,71 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
         // Speed
         Float speed = settings.getFloat("TTS_SPEED", 20);
-        textToSpeech.setSpeechRate(speed);
+        if (!speed.toString().contains("20")) {
+            textToSpeech.setSpeechRate(speed);
+        }
         // Pitch
         Float pitch = settings.getFloat("TTS_PITCH", 20);
-        textToSpeech.setPitch(pitch);
+        if (!pitch.toString().contains("20")) {
+            textToSpeech.setPitch(pitch);
+        }
 
-        textToSpeech.speak(PageContent, TextToSpeech.QUEUE_FLUSH, hashMapAlarm);
+        // Handle Media Player
+        File soundFile = new File(SOUND_PATH_TEMP);
+        if (soundFile.exists())
+            soundFile.delete();
+
+        textToSpeech.synthesizeToFile(PageContent, hashMapAlarm, SOUND_PATH_TEMP);
+
+        // ProgressDialog
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Loading, generating speech...");
+        progressDialog.show();
     }
+
+    /**
+     * Override TTS
+     */
+    private UtteranceProgressListener mProgressListener = new UtteranceProgressListener() {
+        @Override
+        public void onStart(String utteranceId) {
+
+        }
+
+        @Override
+        public void onError(String utteranceId) {
+
+        }
+
+        @Override
+        public void onDone(String utteranceId) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // Handle Media Player
+
+                    // ProgressDialog
+                    progressDialog.dismiss();
+
+                    mMediaPlayer = MediaPlayer.create(MainActivity.this, Uri.parse(SOUND_PATH_TEMP));
+                    mMediaPlayer.start();
+                    mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                        @Override
+                        public void onCompletion(MediaPlayer mp) {
+                            File soundFile = new File(SOUND_PATH_TEMP);
+                            if (soundFile.exists())
+                                soundFile.delete();
+
+                            ButtonStop();
+                            ButtonNext(true);
+                        }
+                    });
+                    mMediaPlayer.start();
+                }
+            });
+        }
+    };
 
     /**
      * Destroy TTS
