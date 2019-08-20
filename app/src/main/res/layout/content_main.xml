@@ -32,7 +32,7 @@
             android:layout_width="120dp"
             android:layout_height="120dp"
             android:layout_marginTop="40dp"
-            android:layout_marginLeft="10dp"
+            android:layout_marginLeft="12dp"
             android:scaleType="centerInside"
             android:background="@drawable/ic_add_pdf"
             tools:ignore="VectorDrawableCompat" />

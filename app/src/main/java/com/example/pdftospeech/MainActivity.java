@@ -4,17 +4,20 @@ import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,6 +28,7 @@ import android.widget.Toast;
 
 import com.github.barteksc.pdfviewer.PDFView;
 import com.github.barteksc.pdfviewer.util.FitPolicy;
+import com.guna.ocrlibrary.OCRCapture;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import com.karumi.dexter.Dexter;
@@ -36,8 +40,11 @@ import com.karumi.dexter.listener.PermissionRequestErrorListener;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.nbsp.materialfilepicker.MaterialFilePicker;
 import com.nbsp.materialfilepicker.ui.FilePickerActivity;
+import com.shockwave.pdfium.PdfiumCore;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -61,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextToSpeech textToSpeech;
 
     // MediaPlayer
-    private MediaPlayer mMediaPlayer;
+    private MediaPlayer mediaPlayer;
 
     // ProgressDialog
     ProgressDialog progressDialog;
@@ -140,9 +147,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             new MaterialFilePicker()
                     .withActivity(this)
                     .withRequestCode(1000)
-                    .withFilter(Pattern.compile(".*\\.pdf$")) // Filtering files and directories by file name using regexp
-                    .withFilterDirectories(false) // Set directories filterable (false by default)
-                    .withHiddenFiles(true) // Show hidden files and folders
+                    .withFilter(Pattern.compile(".*\\.pdf$"))
+                    .withFilterDirectories(false)
+                    .withHiddenFiles(true)
                     .start();
         }
         // Button Play
@@ -171,11 +178,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * Button Play
      */
     private void ButtonPlay() {
-        buttonPlay.setVisibility(View.GONE);
-        buttonPause.setVisibility(View.VISIBLE);
+        GetTTSSettings();
 
         if(!IsPause){
+            // ProgressDialog
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.setCancelable(false);
+            progressDialog.setMessage("Generating speech, please wait...");
+            progressDialog.show();
             DetailsPDF();
+            GetPDFBitmap();
 
             if (PageContent != null && PageContent.length() > 0) {
                 Speak();
@@ -183,10 +195,97 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(this, "Make sure PDF have text on it.", Toast.LENGTH_SHORT).show();
             }
         } else{
-            mMediaPlayer.seekTo(CurrentWord);
-            mMediaPlayer.start();
+            buttonPlay.setVisibility(View.GONE);
+            buttonPause.setVisibility(View.VISIBLE);
+
+            mediaPlayer.seekTo(CurrentWord);
+            mediaPlayer.start();
         }
     }
+
+
+    private void GetPDFBitmap(){
+        PdfiumCore pdfiumCore = new PdfiumCore(getApplicationContext());
+        File file = new File(FilePath);
+        int indexCurrentPage = CurrentPage - 1;
+
+        try{
+            com.shockwave.pdfium.PdfDocument pdf = pdfiumCore.newDocument(
+                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_WRITE)
+            );
+
+            pdfiumCore.openPage(pdf, indexCurrentPage);
+
+            int width = pdfiumCore.getPageWidth(pdf, indexCurrentPage);
+            int height = pdfiumCore.getPageHeight(pdf, indexCurrentPage);
+
+            Bitmap cbitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+            pdfiumCore.renderPageBitmap(pdf, cbitmap, indexCurrentPage, 0, 0, width, height);
+
+            pdfiumCore.closeDocument(pdf);
+
+            new File(Environment.getExternalStorageDirectory()+"/PDF Reader").mkdirs();
+            File outputFile = new File(Environment.getExternalStorageDirectory()+"/PDF Reader", "temp_img.jpg");
+            FileOutputStream outputStream = new FileOutputStream(outputFile);
+
+            cbitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+
+            PageContent = OCRCapture.Builder(this).getTextFromBitmap(cbitmap).replace("iyaaave", "").replace("Please sign here:", "");
+            Log.d("testtesttest", PageContent);
+
+//            TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
+//
+//            Frame imageFrame = new Frame.Builder()
+//                .setBitmap(cbitmap)
+//                .build();
+//            String imageText = "";
+//            SparseArray<TextBlock> textBlocks = textRecognizer.detect(imageFrame);
+//            for (int i = 0; i < textBlocks.size(); i++) {
+//                TextBlock textBlock = textBlocks.get(textBlocks.keyAt(i));
+//                imageText = textBlock.getValue();
+//            }
+//            Log.d("testtesttest", imageText + " --- " + textBlocks.size());
+//            Toast.makeText(this, imageText, Toast.LENGTH_SHORT).show();
+//
+//
+//            outputStream.close();
+
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Button Pause
@@ -195,9 +294,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         buttonPlay.setVisibility(View.VISIBLE);
         buttonPause.setVisibility(View.GONE);
 
-        mMediaPlayer.pause();
+        mediaPlayer.pause();
         IsPause = true;
-        CurrentWord = mMediaPlayer.getCurrentPosition();
+        CurrentWord = mediaPlayer.getCurrentPosition();
     }
 
     /**
@@ -207,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         buttonPlay.setVisibility(View.VISIBLE);
         buttonPause.setVisibility(View.GONE);
 
-        mMediaPlayer.stop();
+        mediaPlayer.stop();
 
         IsPause = false;
         CurrentWord = 0;
@@ -245,14 +344,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
         if (requestCode == 1000 && resultCode == RESULT_OK) {
             FilePath = data.getStringExtra(FilePickerActivity.RESULT_FILE_PATH);
             File file = new File(FilePath);
             PDFView pdfView = findViewById(R.id.pdfView);
             pdfView.fromFile(file)
                     .enableSwipe(false)
-                    .swipeHorizontal(true)
+                    .swipeHorizontal(false)
                     .enableDoubletap(true)
                     .defaultPage(0)
                     .enableAnnotationRendering(false)
@@ -263,7 +361,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     .pageFitPolicy(FitPolicy.WIDTH)
                     .load();
 
-            String filename = file.getName();
+            // String filename = file.getName();
             // Toast.makeText(this, filename, Toast.LENGTH_SHORT).show();
             pdfView.setVisibility(View.VISIBLE);
             linearLayoutButtons.setVisibility(View.VISIBLE);
@@ -280,48 +378,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void DetailsPDF() {
         try {
-            String parsedText = "";
+            // String parsedText = "";
             PdfReader reader = new PdfReader(FilePath);
             PageCount = reader.getNumberOfPages();
-            PageContent = parsedText + PdfTextExtractor.getTextFromPage(reader, CurrentPage).trim(); //Extracting the content from the different page
+            // PageContent = parsedText + PdfTextExtractor.getTextFromPage(reader, CurrentPage).trim(); //Extracting the content from the different page
             reader.close();
         } catch (Exception e) {
             Toast.makeText(this, "Error:" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-    }
-
-    /**
-     * Initialize Multiple Permission
-     */
-    private void RequestMultiplePermission() {
-        Dexter.withActivity(this)
-                .withPermissions(
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_EXTERNAL_STORAGE)
-                .withListener(new MultiplePermissionsListener() {
-                    @Override
-                    public void onPermissionsChecked(MultiplePermissionsReport report) {
-                        if (report.areAllPermissionsGranted()) {
-                        }
-
-                        if (report.isAnyPermissionPermanentlyDenied()) {
-                            Toast.makeText(MainActivity.this, "To able to access the file on your phone. Allow the permission.", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
-                        token.continuePermissionRequest();
-                    }
-                }).
-                withErrorListener(new PermissionRequestErrorListener() {
-                    @Override
-                    public void onError(DexterError error) {
-                        Toast.makeText(getApplicationContext(), "Some Error! ", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .onSameThread()
-                .check();
     }
 
     /**
@@ -391,6 +455,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         hashMapAlarm.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_ALARM));
         hashMapAlarm.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "-");
 
+        // Handle Media Player
+        File soundFile = new File(SOUND_PATH_TEMP);
+        if (soundFile.exists())
+            soundFile.delete();
+
+        textToSpeech.synthesizeToFile(PageContent, hashMapAlarm, SOUND_PATH_TEMP);
+    }
+
+    /**
+     * Get Speed, Pitch Settings
+     */
+    private void GetTTSSettings(){
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
         // Speed
         Float speed = settings.getFloat("TTS_SPEED", 20);
@@ -402,19 +478,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (!pitch.toString().contains("20")) {
             textToSpeech.setPitch(pitch);
         }
-
-        // Handle Media Player
-        File soundFile = new File(SOUND_PATH_TEMP);
-        if (soundFile.exists())
-            soundFile.delete();
-
-        textToSpeech.synthesizeToFile(PageContent, hashMapAlarm, SOUND_PATH_TEMP);
-
-        // ProgressDialog
-        progressDialog.setCanceledOnTouchOutside(false);
-        progressDialog.setCancelable(false);
-        progressDialog.setMessage("Loading, generating speech...");
-        progressDialog.show();
     }
 
     /**
@@ -441,9 +504,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     // ProgressDialog
                     progressDialog.dismiss();
 
-                    mMediaPlayer = MediaPlayer.create(MainActivity.this, Uri.parse(SOUND_PATH_TEMP));
-                    mMediaPlayer.start();
-                    mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    buttonPlay.setVisibility(View.GONE);
+                    buttonPause.setVisibility(View.VISIBLE);
+
+                    mediaPlayer = MediaPlayer.create(MainActivity.this, Uri.parse(SOUND_PATH_TEMP));
+                    mediaPlayer.start();
+                    mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override
                         public void onCompletion(MediaPlayer mp) {
                             File soundFile = new File(SOUND_PATH_TEMP);
@@ -454,7 +520,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             ButtonNext(true);
                         }
                     });
-                    mMediaPlayer.start();
+                    mediaPlayer.start();
                 }
             });
         }
@@ -470,5 +536,39 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             textToSpeech.shutdown();
         }
         super.onDestroy();
+    }
+
+    /**
+     * Initialize Multiple Permission
+     */
+    private void RequestMultiplePermission() {
+        Dexter.withActivity(this)
+                .withPermissions(
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE)
+                .withListener(new MultiplePermissionsListener() {
+                    @Override
+                    public void onPermissionsChecked(MultiplePermissionsReport report) {
+                        if (report.areAllPermissionsGranted()) {
+                        }
+
+                        if (report.isAnyPermissionPermanentlyDenied()) {
+                            Toast.makeText(MainActivity.this, "To able to access the file on your phone. Allow the permission.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
+                        token.continuePermissionRequest();
+                    }
+                }).
+                withErrorListener(new PermissionRequestErrorListener() {
+                    @Override
+                    public void onError(DexterError error) {
+                        Toast.makeText(getApplicationContext(), "Some Error! ", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .onSameThread()
+                .check();
     }
 }
