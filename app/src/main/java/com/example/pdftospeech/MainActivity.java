@@ -17,7 +17,6 @@ import android.speech.tts.UtteranceProgressListener;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -30,7 +29,6 @@ import com.github.barteksc.pdfviewer.PDFView;
 import com.github.barteksc.pdfviewer.util.FitPolicy;
 import com.guna.ocrlibrary.OCRCapture;
 import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -84,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int CurrentWord = 0;
 
     /**
-     * Create the app
+     * Create the Activity
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -203,24 +201,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-
+    /**
+     * Get PDF Bitmap
+     */
     private void GetPDFBitmap(){
         PdfiumCore pdfiumCore = new PdfiumCore(getApplicationContext());
         File file = new File(FilePath);
         int indexCurrentPage = CurrentPage - 1;
 
-        try{
-            com.shockwave.pdfium.PdfDocument pdf = pdfiumCore.newDocument(
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_WRITE)
-            );
+        try {
+            com.shockwave.pdfium.PdfDocument pdf = pdfiumCore.newDocument(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_WRITE));
 
             pdfiumCore.openPage(pdf, indexCurrentPage);
 
             int width = pdfiumCore.getPageWidth(pdf, indexCurrentPage);
             int height = pdfiumCore.getPageHeight(pdf, indexCurrentPage);
 
-            Bitmap cbitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-            pdfiumCore.renderPageBitmap(pdf, cbitmap, indexCurrentPage, 0, 0, width, height);
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+            pdfiumCore.renderPageBitmap(pdf, bitmap, indexCurrentPage, 0, 0, width, height);
 
             pdfiumCore.closeDocument(pdf);
 
@@ -228,64 +226,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             File outputFile = new File(Environment.getExternalStorageDirectory()+"/PDF Reader", "temp_img.jpg");
             FileOutputStream outputStream = new FileOutputStream(outputFile);
 
-            cbitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
 
-            PageContent = OCRCapture.Builder(this).getTextFromBitmap(cbitmap).replace("iyaaave", "").replace("Please sign here:", "");
-            Log.d("testtesttest", PageContent);
-
-//            TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
-//
-//            Frame imageFrame = new Frame.Builder()
-//                .setBitmap(cbitmap)
-//                .build();
-//            String imageText = "";
-//            SparseArray<TextBlock> textBlocks = textRecognizer.detect(imageFrame);
-//            for (int i = 0; i < textBlocks.size(); i++) {
-//                TextBlock textBlock = textBlocks.get(textBlocks.keyAt(i));
-//                imageText = textBlock.getValue();
-//            }
-//            Log.d("testtesttest", imageText + " --- " + textBlocks.size());
-//            Toast.makeText(this, imageText, Toast.LENGTH_SHORT).show();
-//
-//
-//            outputStream.close();
-
+            PageContent = OCRCapture.Builder(this).getTextFromBitmap(bitmap).replace("iyaaave", "").replace("Please sign here:", "");
         } catch(IOException ex) {
             ex.printStackTrace();
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Button Pause
@@ -399,33 +346,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /**
-     * Handle Settings Listener
+     * Handle Menu Listener
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
+        switch (id) {
             // GOTO Settings
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-            return true;
-        } else if (id == R.id.action_refresh) {
+            case R.id.action_settings:
+                Intent intent_settings = new Intent(this, SettingsActivity.class);
+                startActivity(intent_settings);
+                return true;
             // Refresh
-            if (IsPDFView) {
-                ButtonStop();
+            case R.id.action_refresh:
+                if (IsPDFView) {
+                    ButtonStop();
 
-                pdfView.setVisibility(View.GONE);
-                linearLayoutButtons.setVisibility(View.GONE);
-                buttonAddPDF.setVisibility(View.VISIBLE);
+                    pdfView.setVisibility(View.GONE);
+                    linearLayoutButtons.setVisibility(View.GONE);
+                    buttonAddPDF.setVisibility(View.VISIBLE);
 
-                pdfView.invalidate();
+                    pdfView.invalidate();
 
-                IsPDFView = false;
-                CurrentPage = 1;
-            } else {
-                Toast.makeText(this, "You must select PDF first.", Toast.LENGTH_SHORT).show();
-            }
+                    IsPDFView = false;
+                    CurrentPage = 1;
+                } else {
+                    Toast.makeText(this, "You must select PDF first.", Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+            // GOTO About
+            case R.id.action_about:
+                Intent intent_about = new Intent(this, AboutActivity.class);
+                startActivity(intent_about);
+                return true;
+            // GOTO Contact Us
+            case R.id.action_contact:
+                Intent intent_contact = new Intent(this, ContactUsActivity.class);
+                startActivity(intent_contact);
+                return true;
         }
 
         return super.onOptionsItemSelected(item);

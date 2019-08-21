@@ -14,7 +14,7 @@ public class SettingsActivity extends AppCompatActivity {
     BubbleSeekBar seekBarSpeed, seekBarPitch;
 
     /**
-     * Create the app
+     * Create the Activity
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
