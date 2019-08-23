@@ -34,7 +34,7 @@
                 android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book."/>
+                android:text="Let your phone talk for you. This is a PDF to speech converter app."/>
 
             <TextView
                 android:layout_marginTop="20dp"
@@ -45,19 +45,29 @@
                 android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."/>
+                android:text="PDF to speech converter app, converts any pdf into speech. It is text to voice converter. Crystal clear voice with custom voice settings."/>
 
             <TextView
-                android:layout_marginTop="40dp"
+                android:layout_marginTop="20dp"
                 android:layout_marginStart="20dp"
                 android:layout_marginEnd="20dp"
                 android:layout_marginRight="20dp"
                 android:layout_marginLeft="20dp"
-                android:layout_marginBottom="20dp"
                 android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Copyright © 2019"/>
+                android:text="Browse any PDF file and read text aloud. You can play and pause. Go to nextpage and previous page anytime while reading."/>
+
+            <TextView
+                android:layout_marginTop="20dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginRight="20dp"
+                android:layout_marginLeft="20dp"
+                android:textSize="20sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Supports PDF text to speech reader. Listen PDF books for free."/>
 
         </LinearLayout>
     </ScrollView>

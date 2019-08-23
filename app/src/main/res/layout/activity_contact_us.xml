@@ -25,20 +25,6 @@
                 android:layout_height="wrap_content"
                 android:text="PDF to Speech" />
 
-
-            <TextView
-                android:layout_marginTop="20dp"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginRight="20dp"
-                android:layout_marginLeft="20dp"
-                android:textSize="20sp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:autoLink="email"
-                android:textColorLink="@color/colorPrimary"
-                android:text="Address:\n123 street, City, Province, PH"/>
-
             <TextView
                 android:layout_marginTop="20dp"
                 android:layout_marginStart="20dp"
@@ -51,7 +37,7 @@
                 android:layout_height="wrap_content"
                 android:autoLink="email"
                 android:textColorLink="@color/colorPrimary"
-                android:text="Support:\nname@mail.com"/>
+                android:text="Support:\npsustudent@gmail.com"/>
 
         </LinearLayout>
     </ScrollView>
