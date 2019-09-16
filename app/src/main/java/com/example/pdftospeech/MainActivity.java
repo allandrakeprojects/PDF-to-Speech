@@ -14,6 +14,7 @@ import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.support.v4.view.MenuCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -342,6 +343,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+        MenuCompat.setGroupDividerEnabled(menu, true);
         return true;
     }
 

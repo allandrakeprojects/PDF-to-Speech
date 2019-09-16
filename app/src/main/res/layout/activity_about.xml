@@ -23,7 +23,7 @@
                 android:textSize="25dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="PDF to Speech" />
+                android:text="PDF to Audio" />
 
             <TextView
                 android:layout_marginTop="20dp"
@@ -34,7 +34,7 @@
                 android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Let your phone talk for you. This is a PDF to speech converter app."/>
+                android:text="Let your phone talk for you. This is a PDF to Audio converter app."/>
 
             <TextView
                 android:layout_marginTop="20dp"
@@ -45,7 +45,7 @@
                 android:textSize="20sp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="PDF to speech converter app, converts any pdf into speech. It is text to voice converter. Crystal clear voice with custom voice settings."/>
+                android:text="PDF to Audio converter app, converts any pdf into speech. It is text to voice converter. Crystal clear voice with custom voice settings."/>
 
             <TextView
                 android:layout_marginTop="20dp"
